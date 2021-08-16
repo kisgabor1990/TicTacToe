@@ -3,8 +3,17 @@ package tictactoe;
 import java.net.Socket;
 
 public class Jatekos {
+    private String nev;
     private Socket socket;
     private String XO;
+
+    public String getNev() {
+        return nev;
+    }
+
+    public void setNev(String nev) {
+        this.nev = nev;
+    }
 
     public Socket getSocket() {
         return socket;
