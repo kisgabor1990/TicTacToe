@@ -37,9 +37,7 @@ public class Main {
         szerverGomb.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         szerverGomb.addActionListener(e -> {
             foAblak.setVisible(false);
-            SzerverGUI.szerverAblak();
-            SzerverGUI.komponensek();
-            SzerverGUI.szerverAblak.setVisible(true);
+            new SzerverGUI().szerverMain();
         });
         foAblak.add(szerverGomb);
 
@@ -47,6 +45,10 @@ public class Main {
         kliensGomb.setSize(300, 40);
         kliensGomb.setLocation(20, 120);
         kliensGomb.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        kliensGomb.addActionListener(e -> {
+            foAblak.setVisible(false);
+            new KliensGUI().jatekMain();
+        });
         foAblak.add(kliensGomb);
     }
 }
