@@ -21,7 +21,7 @@ public class Main {
 
     }
 
-    public static void foAblak() {
+    private static void foAblak() {
         foAblak = new JFrame("TicTacToe Játék");
         foAblak.setSize(SZELESSEG, MAGASSAG);
         foAblak.setLocation((KEPERNYO_SZELESSEG - SZELESSEG) / 2, (KEPERNYO_MAGASSAG - MAGASSAG) / 2);
@@ -30,11 +30,17 @@ public class Main {
         foAblak.setLayout(null);
     }
 
-    public static void komponensek() {
+    private static void komponensek() {
         szerverGomb = new JButton("Szerver indítása");
         szerverGomb.setSize(300, 40);
         szerverGomb.setLocation(20, 40);
         szerverGomb.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        szerverGomb.addActionListener(e -> {
+            foAblak.setVisible(false);
+            SzerverGUI.szerverAblak();
+            SzerverGUI.komponensek();
+            SzerverGUI.szerverAblak.setVisible(true);
+        });
         foAblak.add(szerverGomb);
 
         kliensGomb = new JButton("Csatlakozás játékhoz");
