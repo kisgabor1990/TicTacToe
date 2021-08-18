@@ -37,12 +37,12 @@ public class SzerverGUI {
     private MaskFormatter tablaMeretFormatter, portFormatter;
     private String IPcim;
     private boolean inditva = false;
-    private int port, jelenlegiJatekosok = 0;
+    private int port;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
     private ExecutorService es = Executors.newCachedThreadPool();
     private ServerSocket serverSocket;
-    private List <Jatekos> jatekosok = new ArrayList <>();
+    private Jatekos jatekosX = null, jatekosO = null;
     private DefaultCaret caret;
 
     public void szerverMain() {
@@ -136,6 +136,7 @@ public class SzerverGUI {
             try {
                 serverSocket = new ServerSocket(port);
                 log.append(dateFormat.format(new Date()) + "Szerver elindítva.\n");
+                inditva = true;
             } catch (IOException e) {
                 log.append(dateFormat.format(new Date()) + "Nem sikerült a szerver indítása!\n");
                 log.append(dateFormat.format(new Date()) + e + "\n");
@@ -148,64 +149,99 @@ public class SzerverGUI {
                 inditasGomb.setText("Leállítás");
                 inditasGomb.setEnabled(true);
                 log.append(dateFormat.format(new Date()) + "A szerver várakozik a következő porton: " + port + "\n");
-                inditva = true;
+            });
 
-                while (inditva && jelenlegiJatekosok != 2) {
+            es.submit(() -> {
+                while (inditva) {
                     Jatekos jatekos = new Jatekos();
                     try {
                         jatekos.setSocket(serverSocket.accept());
-                        jatekosok.add(jatekos);
-                        jelenlegiJatekosok = jatekosok.size();
 
                         es.submit(() -> {
                             try {
                                 BufferedReader bemenet = new BufferedReader(new InputStreamReader(jatekos.getSocket().getInputStream()));
                                 PrintWriter kimenet = new PrintWriter(jatekos.getSocket().getOutputStream(), true);
-                                if (jatekosok.size() == 1) {
-                                    jatekos.setXO("X");
-                                } else {
-                                    jatekos.setXO("O");
-                                }
 
                                 jatekos.setNev(bemenet.readLine());
-                                kimenet.println(tablaMeretText.getText());
+                                if (jatekosX == null || jatekosO == null) {
 
-                                kimenet.println(dateFormat.format(new Date()) + "Üdvözöllek " + jatekos.getNev() + "!");
-                                log.append(dateFormat.format(new Date()) + jatekos.getXO() + " játékos becsatlakozott (" + jatekos.getNev() + ").\n");
-                                kozvetit(jatekos.getXO() + " játékos becsatlakozott (" + jatekos.getNev() + ").");
-                                String uzenet;
-                                while ((uzenet = bemenet.readLine()) != null) {
-                                    log.append(dateFormat.format(new Date()) + "[" + jatekos.getNev() + "] " + uzenet + "\n");
-                                    kozvetit("[" + jatekos.getNev() + "] " + uzenet);
+                                    if (jatekosX == null) {
+                                        jatekos.setXO("X");
+                                        jatekosX = jatekos;
+                                    } else {
+                                        jatekos.setXO("O");
+                                        jatekosO = jatekos;
+                                    }
+
+                                    kimenet.println(tablaMeretText.getText());
+
+                                    kimenet.println(dateFormat.format(new Date()) + "Üdvözöllek " + jatekos.getNev() + "!");
+                                    log.append(dateFormat.format(new Date()) + jatekos.getXO() + " játékos becsatlakozott (" + jatekos.getNev() + ").\n");
+                                    kozvetit(jatekos.getXO() + " játékos becsatlakozott (" + jatekos.getNev() + ").");
+                                    String uzenet, specUzenet;
+                                    while ((uzenet = bemenet.readLine()) != null) {
+                                        if (uzenet.startsWith("--")) {
+                                            specUzenet = uzenet.substring(2);
+                                            log.append(dateFormat.format(new Date()) + "[" + jatekos.getNev() + "] " + specUzenet + "\n");
+                                        } else {
+                                            log.append(dateFormat.format(new Date()) + "[" + jatekos.getNev() + "] " + uzenet + "\n");
+                                            kozvetit("[" + jatekos.getNev() + "] " + uzenet);
+                                        }
+                                    }
+                                    log.append(dateFormat.format(new Date()) + jatekos.getXO() + " játékos kilépett.\n");
+                                    if (jatekos.getXO().equals("X")) {
+                                        jatekosX = null;
+                                    } else {
+                                        jatekosO = null;
+                                    }
+                                } else {
+                                    kimenet.println("0");
+                                    kimenet.println(dateFormat.format(new Date()) + "Sajnálom kedves " + jatekos.getNev() + ", a szerver megtelt!");
+                                    jatekos.getSocket().close();
                                 }
                             } catch (IOException e) {
-                                jatekosok.remove(jatekos);
                                 log.append(dateFormat.format(new Date()) + jatekos.getXO() + " játékos kilépett.\n");
+                                if (jatekos.getXO().equals("X")) {
+                                    jatekosX = null;
+                                } else {
+                                    jatekosO = null;
+                                }
                             }
                         });
                     } catch (IOException e) {
-                        jatekosok.remove(jatekos);
+                        if (jatekos.getXO().equals("X")) {
+                            jatekosX = null;
+                        } else {
+                            jatekosO = null;
+                        }
                     }
                 }
-
             });
+
         } else {
             inditva = false;
-            jatekosok.clear();
-            jelenlegiJatekosok = 0;
             tablaMeretText.setEnabled(true);
             portText.setEnabled(true);
             csatlakozasInditasUtan.setEnabled(true);
-
+            kozvetit("A szerver leállt!");
             log.append(dateFormat.format(new Date()) + "Szerver leállítása...\n");
             inditasGomb.setEnabled(false);
             try {
                 serverSocket.close();
                 log.append(dateFormat.format(new Date()) + "Szerver leállítva.\n");
+                for (Jatekos j : new Jatekos[] { jatekosX, jatekosO }) {
+                    if (j != null) {
+                        j.getSocket().close();
+                    }
+                }
             } catch (IOException e) {
                 log.append(dateFormat.format(new Date()) + "Nem sikerült a szerver leállítása!\n");
                 log.append(dateFormat.format(new Date()) + e + "\n");
             }
+
+            jatekosX = null;
+            jatekosO = null;
+
             log.append(dateFormat.format(new Date()) + "Port lezárása...\n");
             es.submit(() -> {
                 UPnP.closePortTCP(port);
@@ -231,12 +267,14 @@ public class SzerverGUI {
 
     private void kozvetit(String uzenet) {
         PrintWriter sKimenet;
-        for (Jatekos j : jatekosok) {
-            try {
-                sKimenet = new PrintWriter(j.getSocket().getOutputStream(), true);
-                sKimenet.println(dateFormat.format(new Date()) + uzenet);
-            } catch (IOException e) {
-                e.printStackTrace();
+        for (Jatekos j : new Jatekos[] { jatekosX, jatekosO }) {
+            if (j != null) {
+                try {
+                    sKimenet = new PrintWriter(j.getSocket().getOutputStream(), true);
+                    sKimenet.println(dateFormat.format(new Date()) + uzenet);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

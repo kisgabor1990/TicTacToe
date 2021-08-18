@@ -29,7 +29,7 @@ public class KliensGUI {
     private JFormattedTextField cimText, portText, nevText, uzenetText;
     private JButton csatlakozasGomb, kuldesGomb;
     private JTextArea log;
-    private JScrollPane logPane;
+    private JScrollPane logPane, scrollPane;
     private JPanel boardPanel;
     private JButton[][] board;
 
@@ -144,11 +144,19 @@ public class KliensGUI {
         kliensAblak.add(kuldesGomb);
     }
 
-    private void setKomponensekTrue() {
+    private void szetkapcsolas() {
+        csatlakozva = false;
         cimText.setEnabled(true);
         portText.setEnabled(true);
         nevText.setEnabled(true);
+        csatlakozasGomb.setText("Csatlakozás");
         csatlakozasGomb.setEnabled(true);
+        uzenetText.setEnabled(false);
+        kuldesGomb.setEnabled(false);
+
+        kliensAblak.getContentPane().remove(scrollPane);
+        kliensAblak.setSize(SZELESSEG, MAGASSAG);
+        kliensAblak.setLocation((KEPERNYO_SZELESSEG - SZELESSEG) / 2, (KEPERNYO_MAGASSAG - MAGASSAG) / 2);
     }
 
     private void board(int meret) {
@@ -157,7 +165,8 @@ public class KliensGUI {
         int scrollPaneWidth = Math.min(boardPanelSize, scrollPaneMaxWidth);
         int scrollPaneHeight = Math.min(boardPanelSize, scrollPaneMaxHeight);
 
-        kliensAblak.setSize(1000, 600);
+        kliensAblak.setSize(SZELESSEG + 600, MAGASSAG);
+        kliensAblak.setLocation((KEPERNYO_SZELESSEG - (SZELESSEG + 600)) / 2, (KEPERNYO_MAGASSAG - MAGASSAG) / 2);
         board = new JButton[meret][meret];
 
         boardPanel = new JPanel();
@@ -168,13 +177,14 @@ public class KliensGUI {
         for (int i = 0; i < meret; i++) {
             for (int j = 0; j < meret; j++) {
                 board[i][j] = new JButton();
-                board[i][j].setPreferredSize(new Dimension(15,15));
+                board[i][j].setPreferredSize(new Dimension(15, 15));
+                board[i][j].setEnabled(false);
                 boardPanel.add(board[i][j]);
             }
         }
         JPanel container = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         container.add(boardPanel);
-        JScrollPane scrollPane = new JScrollPane(container);
+        scrollPane = new JScrollPane(container);
         scrollPane.setLocation(400, 5);
         scrollPane.setSize(scrollPaneWidth, scrollPaneHeight);
         kliensAblak.getContentPane().add(scrollPane);
@@ -205,31 +215,32 @@ public class KliensGUI {
 
                 kimenet.println(nev);
                 tablaMeret = Integer.parseInt(bemenet.readLine());
-                board(tablaMeret);
+                if (tablaMeret != 0) {
+                    board(tablaMeret);
+                }
 
                 es.submit(() -> {
                     try (BufferedReader be = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
                         String s;
                         while ((s = be.readLine()) != null) {
                             log.append(s + "\n");
+                            if (tablaMeret == 0) {
+                                socket.close();
+                            }
                         }
+                        socket.close();
+                        szetkapcsolas();
                     } catch (IOException e) {
                         log.append(dateFormat.format(new Date()) + "Kapcsolat megszakadt.\n");
-                        setKomponensekTrue();
+                        szetkapcsolas();
                     }
                 });
             } catch (IOException e) {
                 log.append(dateFormat.format(new Date()) + "Csatlakozás sikertelen.\n");
-                setKomponensekTrue();
+                szetkapcsolas();
             }
         } else {
-            cimText.setEnabled(true);
-            portText.setEnabled(true);
-            nevText.setEnabled(true);
-            csatlakozva = false;
-            csatlakozasGomb.setText("Csatlakozás");
-            uzenetText.setEnabled(false);
-            kuldesGomb.setEnabled(false);
+            szetkapcsolas();
 
             try {
                 socket.close();
