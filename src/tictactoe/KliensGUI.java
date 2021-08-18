@@ -32,11 +32,12 @@ public class KliensGUI {
     private JScrollPane logPane, scrollPane;
     private JPanel boardPanel;
     private JButton[][] board;
+    private JLabel idoLabel, jelenlegiJatekosLabel;
 
     private MaskFormatter portFormatter;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
-    private int port, tablaMeret;
-    private String cim, nev;
+    private int port, tablaMeret, perc, mperc;
+    private String cim, nev, jelenlegiJatekos;
     private boolean csatlakozva = false;
 
     private DefaultCaret caret;
@@ -165,8 +166,8 @@ public class KliensGUI {
         int scrollPaneWidth = Math.min(boardPanelSize, scrollPaneMaxWidth);
         int scrollPaneHeight = Math.min(boardPanelSize, scrollPaneMaxHeight);
 
-        kliensAblak.setSize(SZELESSEG + 600, MAGASSAG);
-        kliensAblak.setLocation((KEPERNYO_SZELESSEG - (SZELESSEG + 600)) / 2, (KEPERNYO_MAGASSAG - MAGASSAG) / 2);
+        kliensAblak.setSize(SZELESSEG + 800, MAGASSAG);
+        kliensAblak.setLocation((KEPERNYO_SZELESSEG - (SZELESSEG + 800)) / 2, (KEPERNYO_MAGASSAG - MAGASSAG) / 2);
         board = new JButton[meret][meret];
 
         boardPanel = new JPanel();
@@ -182,12 +183,25 @@ public class KliensGUI {
                 boardPanel.add(board[i][j]);
             }
         }
-        JPanel container = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        container.add(boardPanel);
+        JPanel container = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        container.add(boardPanel, gbc);
         scrollPane = new JScrollPane(container);
         scrollPane.setLocation(400, 5);
-        scrollPane.setSize(scrollPaneWidth, scrollPaneHeight);
-        kliensAblak.getContentPane().add(scrollPane);
+        scrollPane.setSize(scrollPaneMaxWidth, scrollPaneMaxHeight);
+        kliensAblak.add(scrollPane);
+
+        idoLabel = new JLabel("00:00", SwingConstants.CENTER);
+        idoLabel.setSize(200, 40);
+        idoLabel.setLocation(980, 20);
+        idoLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        kliensAblak.add(idoLabel);
+
+        jelenlegiJatekosLabel = new JLabel("", SwingConstants.CENTER);
+        jelenlegiJatekosLabel.setSize(200, 40);
+        jelenlegiJatekosLabel.setLocation(980, 100);
+        jelenlegiJatekosLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        kliensAblak.add(jelenlegiJatekosLabel);
     }
 
     private void csatlakozas() {
@@ -234,6 +248,9 @@ public class KliensGUI {
                                             board[i][j].setEnabled(true);
                                         }
                                     }
+                                }
+                                if (specUzenet.startsWith("currentplayer:")) {
+                                    jelenlegiJatekosLabel.setText(specUzenet.split(":")[1] + " következik");
                                 }
                             } else {
                                 log.append(uzenet + "\n");

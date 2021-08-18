@@ -42,7 +42,7 @@ public class SzerverGUI {
     private SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
     private ExecutorService es = Executors.newCachedThreadPool();
     private ServerSocket serverSocket;
-    private Jatekos jatekosX = null, jatekosO = null;
+    private Jatekos jatekosX = null, jatekosO = null, jelenlegiJatekos;
     private DefaultCaret caret;
 
     public void szerverMain() {
@@ -173,6 +173,8 @@ public class SzerverGUI {
                                         jatekosO = jatekos;
                                     }
 
+                                    jelenlegiJatekos = jatekosX;
+
                                     kimenet.println(tablaMeretText.getText());
 
                                     kimenet.println(dateFormat.format(new Date()) + "Üdvözöllek " + jatekos.getNev() + "!");
@@ -209,6 +211,7 @@ public class SzerverGUI {
                                         }
                                         if (jatekosX.isReady() && jatekosO.isReady()) {
                                             specKozvetit("--everybodyready");
+                                            specKozvetit("--currentplayer:" + jelenlegiJatekos.getXO());
                                             kozvetit("Mindenki készen áll. Kezdőjön a játék!");
                                         }
                                     }
@@ -319,7 +322,11 @@ public class SzerverGUI {
         }
     }
 
-    private boolean csatlakozvaVan(Socket socket) {
-        return false;
+    private void kovetkezoJatekos() {
+        if (jelenlegiJatekos == jatekosX) {
+            jelenlegiJatekos = jatekosO;
+        } else {
+            jelenlegiJatekos = jatekosX;
+        }
     }
 }
