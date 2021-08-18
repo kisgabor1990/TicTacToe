@@ -221,9 +221,23 @@ public class KliensGUI {
 
                 es.submit(() -> {
                     try (BufferedReader be = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-                        String s;
-                        while ((s = be.readLine()) != null) {
-                            log.append(s + "\n");
+                        String uzenet, specUzenet;
+                        while ((uzenet = be.readLine()) != null) {
+                            if (uzenet.startsWith("--")) {
+                                specUzenet = uzenet.substring(2);
+                                if (specUzenet.equals("readycheck")) {
+                                    kimenet.println("--ready:" + readyCheck());
+                                }
+                                if (specUzenet.equals("everybodyready")) {
+                                    for (int i = 0; i < tablaMeret; i++) {
+                                        for (int j = 0; j < tablaMeret; j++) {
+                                            board[i][j].setEnabled(true);
+                                        }
+                                    }
+                                }
+                            } else {
+                                log.append(uzenet + "\n");
+                            }
                             if (tablaMeret == 0) {
                                 socket.close();
                             }
@@ -250,9 +264,17 @@ public class KliensGUI {
         }
     }
 
+    private boolean readyCheck() {
+        return JOptionPane.showConfirmDialog(kliensAblak, "Készen állsz?", "Ready Check", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+    }
+
     private void uzenetKuldes() {
         if (!uzenetText.getText().equals("")) {
-            kimenet.println(uzenetText.getText());
+            if (uzenetText.getText().equals("--readynow")) {
+                kimenet.println("--ready:true");
+            } else {
+                kimenet.println(uzenetText.getText());
+            }
             uzenetText.setText("");
         }
     }

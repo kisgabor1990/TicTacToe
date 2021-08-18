@@ -6,6 +6,7 @@ public class Jatekos {
     private String nev;
     private Socket socket;
     private String XO;
+    private boolean ready;
 
     public String getNev() {
         return nev;
@@ -29,5 +30,13 @@ public class Jatekos {
 
     public void setXO(String XO) {
         this.XO = XO;
+    }
+
+    public boolean isReady() {
+        return ready;
+    }
+
+    public void setReady(boolean ready) {
+        this.ready = ready;
     }
 }
