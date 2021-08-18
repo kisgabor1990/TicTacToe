@@ -13,6 +13,7 @@ import java.net.Socket;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -32,13 +33,13 @@ public class KliensGUI {
     private JScrollPane logPane, scrollPane;
     private JPanel boardPanel;
     private JButton[][] board;
-    private JLabel idoLabel, jelenlegiJatekosLabel;
+    private JLabel idoLabel, jelenlegiJatekosLabel, jatekosLabel;
 
     private MaskFormatter portFormatter;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
     private int port, tablaMeret, perc, mperc;
-    private String cim, nev, jelenlegiJatekos;
-    private boolean csatlakozva = false;
+    private String cim, nev, jelenlegiJatekos, jatekos;
+    private boolean csatlakozva = false, idozitoInditva = false;
 
     private DefaultCaret caret;
     private ExecutorService es = Executors.newCachedThreadPool();
@@ -158,13 +159,20 @@ public class KliensGUI {
         kliensAblak.getContentPane().remove(scrollPane);
         kliensAblak.setSize(SZELESSEG, MAGASSAG);
         kliensAblak.setLocation((KEPERNYO_SZELESSEG - SZELESSEG) / 2, (KEPERNYO_MAGASSAG - MAGASSAG) / 2);
+
+        kliensAblak.remove(scrollPane);
+        kliensAblak.remove(idoLabel);
+        kliensAblak.remove(jelenlegiJatekosLabel);
+        kliensAblak.remove(jatekosLabel);
+
+        perc = 0;
+        mperc = 0;
+        idozitoMegallit();
     }
 
     private void board(int meret) {
-        int scrollPaneMaxWidth = 580, scrollPaneMaxHeight = 550;
+        int scrollPaneWidth = 580, scrollPaneHeight = 550;
         int boardPanelSize = meret * 15 + 10;
-        int scrollPaneWidth = Math.min(boardPanelSize, scrollPaneMaxWidth);
-        int scrollPaneHeight = Math.min(boardPanelSize, scrollPaneMaxHeight);
 
         kliensAblak.setSize(SZELESSEG + 800, MAGASSAG);
         kliensAblak.setLocation((KEPERNYO_SZELESSEG - (SZELESSEG + 800)) / 2, (KEPERNYO_MAGASSAG - MAGASSAG) / 2);
@@ -179,7 +187,17 @@ public class KliensGUI {
             for (int j = 0; j < meret; j++) {
                 board[i][j] = new JButton();
                 board[i][j].setPreferredSize(new Dimension(15, 15));
+                board[i][j].setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
+                board[i][j].setMargin(new Insets(0, 0, 0, 0));
                 board[i][j].setEnabled(false);
+                int x = i;
+                int y = j;
+                board[i][j].addActionListener((e) -> {
+                    JButton src = (JButton) e.getSource();
+                    if (jelenlegiJatekos.equals(jatekos) && src.getText().equals("")) {
+                        kimenet.println("--next:" + x + ":" + y);
+                    }
+                });
                 boardPanel.add(board[i][j]);
             }
         }
@@ -188,7 +206,7 @@ public class KliensGUI {
         container.add(boardPanel, gbc);
         scrollPane = new JScrollPane(container);
         scrollPane.setLocation(400, 5);
-        scrollPane.setSize(scrollPaneMaxWidth, scrollPaneMaxHeight);
+        scrollPane.setSize(scrollPaneWidth, scrollPaneHeight);
         kliensAblak.add(scrollPane);
 
         idoLabel = new JLabel("00:00", SwingConstants.CENTER);
@@ -196,6 +214,12 @@ public class KliensGUI {
         idoLabel.setLocation(980, 20);
         idoLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         kliensAblak.add(idoLabel);
+
+        jatekosLabel = new JLabel("", SwingConstants.CENTER);
+        jatekosLabel.setSize(200, 40);
+        jatekosLabel.setLocation(980, 60);
+        jatekosLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
+        kliensAblak.add(jatekosLabel);
 
         jelenlegiJatekosLabel = new JLabel("", SwingConstants.CENTER);
         jelenlegiJatekosLabel.setSize(200, 40);
@@ -228,9 +252,17 @@ public class KliensGUI {
                 kuldesGomb.setEnabled(true);
 
                 kimenet.println(nev);
-                tablaMeret = Integer.parseInt(bemenet.readLine());
+
+                String[] adatok = bemenet.readLine().split(":");
+                jatekos = adatok[0];
+                tablaMeret = Integer.parseInt(adatok[1]);
+
                 if (tablaMeret != 0) {
                     board(tablaMeret);
+                    jatekosLabel.setText(jatekos);
+                } else {
+                    log.append(bemenet.readLine() + "\n");
+                    socket.close();
                 }
 
                 es.submit(() -> {
@@ -246,17 +278,33 @@ public class KliensGUI {
                                     for (int i = 0; i < tablaMeret; i++) {
                                         for (int j = 0; j < tablaMeret; j++) {
                                             board[i][j].setEnabled(true);
+                                            board[i][j].setText("");
+                                        }
+                                    }
+                                    idozitoIndit();
+                                }
+                                if (specUzenet.startsWith("currentplayer:")) {
+                                    jelenlegiJatekos = specUzenet.split(":")[1];
+                                    if (jelenlegiJatekos.equals(jatekos)) {
+                                        jelenlegiJatekosLabel.setText("Te következel");
+                                    } else {
+                                        jelenlegiJatekosLabel.setText(jelenlegiJatekos + " következik");
+                                    }
+                                }
+                                if (specUzenet.startsWith("next:")) {
+                                    String[] next = specUzenet.split(":");
+                                    board[Integer.parseInt(next[1])][Integer.parseInt(next[2])].setText(jelenlegiJatekos);
+                                }
+                                if (specUzenet.equals("stop")) {
+                                    idozitoMegallit();
+                                    for (int i = 0; i < tablaMeret; i++) {
+                                        for (int j = 0; j < tablaMeret; j++) {
+                                            board[i][j].setEnabled(false);
                                         }
                                     }
                                 }
-                                if (specUzenet.startsWith("currentplayer:")) {
-                                    jelenlegiJatekosLabel.setText(specUzenet.split(":")[1] + " következik");
-                                }
                             } else {
                                 log.append(uzenet + "\n");
-                            }
-                            if (tablaMeret == 0) {
-                                socket.close();
                             }
                         }
                         socket.close();
@@ -283,6 +331,32 @@ public class KliensGUI {
 
     private boolean readyCheck() {
         return JOptionPane.showConfirmDialog(kliensAblak, "Készen állsz?", "Ready Check", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+    }
+
+    private void idozitoIndit() {
+        es.submit(() -> {
+            idoLabel.setText("00:00");
+            perc = 0;
+            mperc = 0;
+            idozitoInditva = true;
+            while (idozitoInditva) {
+                try {
+                    mperc++;
+                    if (mperc == 60) {
+                        perc++;
+                        mperc = 0;
+                    }
+                    idoLabel.setText("%02d:%02d".formatted(perc, mperc));
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private void idozitoMegallit() {
+        idozitoInditva = false;
     }
 
     private void uzenetKuldes() {

@@ -175,11 +175,11 @@ public class SzerverGUI {
 
                                     jelenlegiJatekos = jatekosX;
 
-                                    kimenet.println(tablaMeretText.getText());
+                                    kimenet.println(jatekos.getXO() + ":" + tablaMeretText.getText());
 
-                                    kimenet.println(dateFormat.format(new Date()) + "Üdvözöllek " + jatekos.getNev() + "!");
                                     log.append(dateFormat.format(new Date()) + jatekos.getXO() + " játékos becsatlakozott (" + jatekos.getNev() + ").\n");
                                     kozvetit(jatekos.getXO() + " játékos becsatlakozott (" + jatekos.getNev() + ").");
+                                    kimenet.println(dateFormat.format(new Date()) + "Üdvözöllek " + jatekos.getNev() + "!");
 
                                     if (jatekosX != null && jatekosO != null) {
                                         specKozvetit("--readycheck");
@@ -204,26 +204,35 @@ public class SzerverGUI {
                                                 } else {
                                                     jatekosO.setReady(ready);
                                                 }
+                                                if (jatekosX.isReady() && jatekosO.isReady()) {
+                                                    specKozvetit("--everybodyready");
+                                                    specKozvetit("--currentplayer:" + jelenlegiJatekos.getXO());
+                                                    kozvetit("Mindenki készen áll. Kezdőjön a játék!");
+                                                }
+                                            }
+                                            if (specUzenet.startsWith("next:")) {
+                                                String[] next = specUzenet.split(":");
+                                                specKozvetit("--next:" + next[1] + ":" + next[2]);
+                                                kovetkezoJatekos();
+                                                specKozvetit("--currentplayer:" + jelenlegiJatekos.getXO());
                                             }
                                         } else {
                                             log.append(dateFormat.format(new Date()) + "[" + jatekos.getNev() + "] " + uzenet + "\n");
                                             kozvetit("[" + jatekos.getNev() + "] " + uzenet);
                                         }
-                                        if (jatekosX.isReady() && jatekosO.isReady()) {
-                                            specKozvetit("--everybodyready");
-                                            specKozvetit("--currentplayer:" + jelenlegiJatekos.getXO());
-                                            kozvetit("Mindenki készen áll. Kezdőjön a játék!");
-                                        }
                                     }
                                     log.append(dateFormat.format(new Date()) + jatekos.getXO() + " játékos kilépett.\n");
                                     kozvetit(jatekos.getXO() + " játékos kilépett.");
+                                    specKozvetit("--stop");
                                     if (jatekos.getXO().equals("X")) {
                                         jatekosX = null;
+                                        jatekosO.setReady(false);
                                     } else {
                                         jatekosO = null;
+                                        jatekosX.setReady(false);
                                     }
                                 } else {
-                                    kimenet.println("0");
+                                    kimenet.println("-:0");
                                     kimenet.println(dateFormat.format(new Date()) + "Sajnálom kedves " + jatekos.getNev() + ", a szerver megtelt!");
                                     jatekos.getSocket().close();
                                 }
