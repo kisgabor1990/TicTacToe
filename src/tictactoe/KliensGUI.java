@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class KliensGUI {
 
@@ -40,6 +41,8 @@ public class KliensGUI {
     private int port, tablaMeret, perc, mperc;
     private String cim, nev, jelenlegiJatekos, jatekos;
     private boolean csatlakozva = false, idozitoInditva = false;
+    private int[] xGyoztesKoord = new int[5];
+    private int[] yGyoztesKoord = new int[5];
 
     private DefaultCaret caret;
     private ExecutorService es = Executors.newCachedThreadPool();
@@ -295,6 +298,25 @@ public class KliensGUI {
                                     String[] next = specUzenet.split(":");
                                     board[Integer.parseInt(next[1])][Integer.parseInt(next[2])].setText(jelenlegiJatekos);
                                 }
+                                if (specUzenet.startsWith("xwinnercoord:")) {
+                                    String[] x = specUzenet.split(":");
+                                    for (int i = 0; i < 5; i++) {
+                                        xGyoztesKoord[i] = Integer.parseInt(x[i+1]);
+                                    }
+                                }
+                                if (specUzenet.startsWith("ywinnercoord:")) {
+                                    String[] x = specUzenet.split(":");
+                                    for (int i = 0; i < 5; i++) {
+                                        yGyoztesKoord[i] = Integer.parseInt(x[i+1]);
+                                    }                                }
+                                if (specUzenet.equals("haswinner")) {
+                                    vanGyoztes();
+                                    if (jelenlegiJatekos.equals(jatekos)) {
+                                        jelenlegiJatekosLabel.setText("Te győztél");
+                                    } else {
+                                        jelenlegiJatekosLabel.setText(jelenlegiJatekos + " győzött");
+                                    }
+                                }
                                 if (specUzenet.equals("stop")) {
                                     idozitoMegallit();
                                     for (int i = 0; i < tablaMeret; i++) {
@@ -326,6 +348,20 @@ public class KliensGUI {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void vanGyoztes() {
+        idozitoMegallit();
+
+        for (int i = 0; i < tablaMeret; i++) {
+            for (int j = 0; j < tablaMeret; j++) {
+                board[i][j].setEnabled(false);
+            }
+        }
+
+        for (int i = 0; i < 5; i++) {
+            board[xGyoztesKoord[i]][yGyoztesKoord[i]].setEnabled(true);
         }
     }
 

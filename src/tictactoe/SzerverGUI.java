@@ -14,11 +14,13 @@ import java.net.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class SzerverGUI {
 
@@ -36,8 +38,11 @@ public class SzerverGUI {
 
     private MaskFormatter tablaMeretFormatter, portFormatter;
     private String IPcim;
+    private String[][] board;
     private boolean inditva = false;
-    private int port;
+    private int port, meret;
+    private int[] xGyoztesKoord = new int[5];
+    private int[] yGyoztesKoord = new int[5];
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
     private ExecutorService es = Executors.newCachedThreadPool();
@@ -132,6 +137,8 @@ public class SzerverGUI {
             csatlakozasInditasUtan.setEnabled(false);
             inditasGomb.setEnabled(false);
 
+            meret = Integer.parseInt(tablaMeretText.getText());
+
             log.append(dateFormat.format(new Date()) + "Szerver indítása...\n");
             try {
                 serverSocket = new ServerSocket(port);
@@ -207,14 +214,32 @@ public class SzerverGUI {
                                                 if (jatekosX.isReady() && jatekosO.isReady()) {
                                                     specKozvetit("--everybodyready");
                                                     specKozvetit("--currentplayer:" + jelenlegiJatekos.getXO());
+                                                    log.append(dateFormat.format(new Date()) + "Mindenki készen áll. A játék elkezdődik.\n");
                                                     kozvetit("Mindenki készen áll. Kezdőjön a játék!");
+                                                    board = new String[meret][meret];
+                                                    for (int i = 0; i < meret; i++) {
+                                                        for (int j = 0; j < meret; j++) {
+                                                            board[i][j] = "";
+                                                        }
+                                                    }
                                                 }
                                             }
                                             if (specUzenet.startsWith("next:")) {
                                                 String[] next = specUzenet.split(":");
+                                                int xCoord = Integer.parseInt(next[1]);
+                                                int yCoord = Integer.parseInt(next[2]);
+                                                board[xCoord][yCoord] = jelenlegiJatekos.getXO();
                                                 specKozvetit("--next:" + next[1] + ":" + next[2]);
-                                                kovetkezoJatekos();
-                                                specKozvetit("--currentplayer:" + jelenlegiJatekos.getXO());
+                                                if (vanGyoztes(xCoord, yCoord)) {
+                                                    kozvetit("A játék véget ért! " + jelenlegiJatekos.getXO() + " győzőtt!");
+                                                    log.append(dateFormat.format(new Date()) + "A játék véget ért! " + jelenlegiJatekos.getXO() + " győzőtt!\n");
+                                                    specKozvetit("--xwinnercoord:" + Arrays.stream(xGyoztesKoord).mapToObj(String::valueOf).collect(Collectors.joining(":")));
+                                                    specKozvetit("--ywinnercoord:" + Arrays.stream(yGyoztesKoord).mapToObj(String::valueOf).collect(Collectors.joining(":")));
+                                                    specKozvetit("--haswinner");
+                                                } else {
+                                                    kovetkezoJatekos();
+                                                    specKozvetit("--currentplayer:" + jelenlegiJatekos.getXO());
+                                                }
                                             }
                                         } else {
                                             log.append(dateFormat.format(new Date()) + "[" + jatekos.getNev() + "] " + uzenet + "\n");
@@ -337,5 +362,34 @@ public class SzerverGUI {
         } else {
             jelenlegiJatekos = jatekosX;
         }
+    }
+
+    private boolean vanGyoztes(int x, int y) {
+        int count = 0;
+        for (int i = Math.max(0, x - 5); i < Math.min(meret, x + 5); i++) {
+            if (board[i][y].equals(jelenlegiJatekos.getXO())) {
+                xGyoztesKoord[count] = i;
+                yGyoztesKoord[count] = y;
+                count++;
+                if (count == 5) {
+                    return true;
+                }
+            } else {
+                count = 0;
+            }
+        }
+        for (int i = Math.max(0, y - 5); i < Math.min(meret, y + 5); i++) {
+            if (board[x][i].equals(jelenlegiJatekos.getXO())) {
+                xGyoztesKoord[count] = x;
+                yGyoztesKoord[count] = i;
+                count++;
+                if (count == 5) {
+                    return true;
+                }
+            } else {
+                count = 0;
+            }
+        }
+        return false;
     }
 }
