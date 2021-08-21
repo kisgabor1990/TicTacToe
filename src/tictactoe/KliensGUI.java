@@ -38,7 +38,7 @@ public class KliensGUI {
 
     private MaskFormatter portFormatter;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
-    private int port, tablaMeret, perc, mperc;
+    private int port, tablaMeret;
     private String cim, nev, jelenlegiJatekos, jatekos;
     private boolean csatlakozva = false, idozitoInditva = false;
     private int[] xGyoztesKoord = new int[5];
@@ -49,6 +49,7 @@ public class KliensGUI {
     private PrintWriter kimenet;
     private BufferedReader bemenet;
     private Socket socket;
+    private Timer timer;
 
     public void jatekMain() {
         try {
@@ -168,9 +169,8 @@ public class KliensGUI {
         kliensAblak.remove(jelenlegiJatekosLabel);
         kliensAblak.remove(jatekosLabel);
 
-        perc = 0;
-        mperc = 0;
-        idozitoMegallit();
+        timer.stop();
+        timer.reset();
     }
 
     private void board(int meret) {
@@ -229,6 +229,8 @@ public class KliensGUI {
         jelenlegiJatekosLabel.setLocation(980, 100);
         jelenlegiJatekosLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         kliensAblak.add(jelenlegiJatekosLabel);
+
+        timer = new Timer(idoLabel);
     }
 
     private void csatlakozas() {
@@ -284,7 +286,8 @@ public class KliensGUI {
                                             board[i][j].setText("");
                                         }
                                     }
-                                    idozitoIndit();
+                                    timer.reset();
+                                    timer.start();
                                 }
                                 if (specUzenet.startsWith("currentplayer:")) {
                                     jelenlegiJatekos = specUzenet.split(":")[1];
@@ -318,7 +321,7 @@ public class KliensGUI {
                                     }
                                 }
                                 if (specUzenet.equals("stop")) {
-                                    idozitoMegallit();
+                                    timer.stop();
                                     for (int i = 0; i < tablaMeret; i++) {
                                         for (int j = 0; j < tablaMeret; j++) {
                                             board[i][j].setEnabled(false);
@@ -352,7 +355,7 @@ public class KliensGUI {
     }
 
     private void vanGyoztes() {
-        idozitoMegallit();
+        timer.stop();
 
         for (int i = 0; i < tablaMeret; i++) {
             for (int j = 0; j < tablaMeret; j++) {
@@ -367,32 +370,6 @@ public class KliensGUI {
 
     private boolean readyCheck() {
         return JOptionPane.showConfirmDialog(kliensAblak, "Készen állsz?", "Ready Check", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
-    }
-
-    private void idozitoIndit() {
-        es.submit(() -> {
-            idoLabel.setText("00:00");
-            perc = 0;
-            mperc = 0;
-            idozitoInditva = true;
-            while (idozitoInditva) {
-                try {
-                    mperc++;
-                    if (mperc == 60) {
-                        perc++;
-                        mperc = 0;
-                    }
-                    idoLabel.setText("%02d:%02d".formatted(perc, mperc));
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-    }
-
-    private void idozitoMegallit() {
-        idozitoInditva = false;
     }
 
     private void uzenetKuldes() {
