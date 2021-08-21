@@ -304,4 +304,14 @@ public class KliensGUI {
         }
     }
 
+    public void setAddress(String text) {
+        cimText.setText(text);
+        cimText.setEnabled(false);
+    }
+
+    public void setPort(String port) {
+        portText.setText(port);
+        portText.setEnabled(false);
+    }
+
 }

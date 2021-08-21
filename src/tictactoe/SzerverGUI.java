@@ -108,6 +108,7 @@ public class SzerverGUI {
         csatlakozasInditasUtan.setSize(400, 40);
         csatlakozasInditasUtan.setLocation(20, 140);
         csatlakozasInditasUtan.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
+        csatlakozasInditasUtan.setSelected(true);
         szerverAblak.add(csatlakozasInditasUtan);
 
         inditasGomb = new JButton("Indítás");
@@ -156,6 +157,14 @@ public class SzerverGUI {
                 inditasGomb.setText("Leállítás");
                 inditasGomb.setEnabled(true);
                 log.append(dateFormat.format(new Date()) + "A szerver várakozik a következő porton: " + port + "\n");
+
+                if (csatlakozasInditasUtan.isSelected()) {
+                    szerverAblak.setState(Frame.ICONIFIED);
+                    KliensGUI kliens = new KliensGUI();
+                    kliens.jatekMain();
+                    kliens.setAddress("localhost");
+                    kliens.setPort(String.valueOf(port));
+                }
             });
 
             es.submit(() -> {
@@ -391,7 +400,7 @@ public class SzerverGUI {
             }
         }
         for (int i = -5; i < 5; i++) {                                          // Átlósan fentről lefelé
-            if ( x + i < 0 || y + i < 0 ) {
+            if (x + i < 0 || y + i < 0) {
                 continue;
             }
             if (x + i > meret - 1 || y + i > meret - 1) {
@@ -409,7 +418,7 @@ public class SzerverGUI {
             }
         }
         for (int i = -5; i < 5; i++) {                                          // Átlósan lentről felfelé
-            if ( x - i > meret - 1  || y + i < 0 ) {
+            if (x - i > meret - 1 || y + i < 0) {
                 continue;
             }
             if (x - i < 0 || y + i > meret - 1) {
