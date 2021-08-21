@@ -366,7 +366,7 @@ public class SzerverGUI {
 
     private boolean vanGyoztes(int x, int y) {
         int count = 0;
-        for (int i = Math.max(0, x - 5); i < Math.min(meret, x + 5); i++) {
+        for (int i = Math.max(0, x - 5); i < Math.min(meret, x + 5); i++) {  // Függőleges
             if (board[i][y].equals(jelenlegiJatekos.getXO())) {
                 xGyoztesKoord[count] = i;
                 yGyoztesKoord[count] = y;
@@ -378,10 +378,28 @@ public class SzerverGUI {
                 count = 0;
             }
         }
-        for (int i = Math.max(0, y - 5); i < Math.min(meret, y + 5); i++) {
+        for (int i = Math.max(0, y - 5); i < Math.min(meret, y + 5); i++) {  // Vízszintes
             if (board[x][i].equals(jelenlegiJatekos.getXO())) {
                 xGyoztesKoord[count] = x;
                 yGyoztesKoord[count] = i;
+                count++;
+                if (count == 5) {
+                    return true;
+                }
+            } else {
+                count = 0;
+            }
+        }
+        for (int i = -5; i < 5; i++) {  // Átlósan fentről lefelé
+            if ( x + i < 0 || y + i < 0 ) {
+                continue;
+            }
+            if (x + i > meret || y + i > meret) {
+                break;
+            }
+            if (board[x + i][y + i].equals(jelenlegiJatekos.getXO())) {
+                xGyoztesKoord[count] = x + i;
+                yGyoztesKoord[count] = y + i;
                 count++;
                 if (count == 5) {
                     return true;
