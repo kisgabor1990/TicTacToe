@@ -14,6 +14,8 @@ public class Board {
     private JPanel boardPanel, container;
     private JScrollPane scrollPane;
     private JLabel timerLabel, playerLabel, currentPlayerLabel;
+    private JLabel resultXLabel, resultOLabel, resultLabel;
+    private JSeparator separator;
     private GridBagConstraints gbc = new GridBagConstraints();
 
     private Consumer <String> out;
@@ -82,6 +84,29 @@ public class Board {
         currentPlayerLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         frame.add(currentPlayerLabel);
 
+        resultXLabel = new JLabel("X", SwingConstants.RIGHT);
+        resultXLabel.setSize(85, 40);
+        resultXLabel.setLocation(980, 250);
+        resultXLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
+        frame.add(resultXLabel);
+
+        resultOLabel = new JLabel("O", SwingConstants.LEFT);
+        resultOLabel.setSize(85, 40);
+        resultOLabel.setLocation(1094, 250);
+        resultOLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
+        frame.add(resultOLabel);
+
+        separator = new JSeparator();
+        separator.setSize(200, 5);
+        separator.setLocation(980, 290);
+        frame.add(separator);
+
+        resultLabel = new JLabel("%3d - %-3d".formatted(0, 0), SwingConstants.CENTER);
+        resultLabel.setSize(200, 40);
+        resultLabel.setLocation(980, 295);
+        resultLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
+        frame.add(resultLabel);
+
         timer = new Timer(timerLabel);
 
     }
@@ -105,7 +130,6 @@ public class Board {
     public void reset() {
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                board[i][j].setEnabled(true);
                 board[i][j].setText("");
             }
         }
@@ -116,6 +140,7 @@ public class Board {
         frame.remove(timerLabel);
         frame.remove(currentPlayerLabel);
         frame.remove(playerLabel);
+        frame.remove(resultLabel);
     }
 
     public void setPlayer(String player) {
@@ -132,5 +157,9 @@ public class Board {
 
     public void showWinner(int x, int y) {
         board[x][y].setEnabled(true);
+    }
+
+    public void setWins(int xWins, int oWins) {
+        resultLabel.setText("%3d - %-3d".formatted(xWins, oWins));
     }
 }

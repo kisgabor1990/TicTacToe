@@ -35,10 +35,10 @@ public class KliensGUI {
 
     private MaskFormatter portFormatter;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
-    private int port, tablaMeret;
+    private int port, tablaMeret, xWins, oWins;
     private String cim, nev;
     public static String jelenlegiJatekos, jatekos;
-    private boolean csatlakozva = false, idozitoInditva = false;
+    private boolean csatlakozva = false;
     private int[] xGyoztesKoord = new int[5];
     private int[] yGyoztesKoord = new int[5];
 
@@ -160,11 +160,6 @@ public class KliensGUI {
 
         kliensAblak.setSize(SZELESSEG, MAGASSAG);
         kliensAblak.setLocation((KEPERNYO_SZELESSEG - SZELESSEG) / 2, (KEPERNYO_MAGASSAG - MAGASSAG) / 2);
-
-        board.destroy();
-
-        board.timer.stop();
-        board.timer.reset();
     }
 
     private void csatlakozas() {
@@ -211,11 +206,14 @@ public class KliensGUI {
                             if (uzenet.startsWith("--")) {
                                 specUzenet = uzenet.substring(2);
                                 if (specUzenet.equals("readycheck")) {
+                                    board.reset();
+                                    board.disable();
+                                    board.timer.reset();
+                                    board.setWins(xWins, oWins);
                                     kimenet.println("--ready:" + readyCheck());
                                 }
                                 if (specUzenet.equals("everybodyready")) {
-                                    board.reset();
-                                    board.timer.reset();
+                                    board.enable();
                                     board.timer.start();
                                 }
                                 if (specUzenet.startsWith("currentplayer:")) {
@@ -242,17 +240,29 @@ public class KliensGUI {
                                         yGyoztesKoord[i] = Integer.parseInt(x[i + 1]);
                                     }
                                 }
-                                if (specUzenet.equals("haswinner")) {
+                                if (specUzenet.startsWith("haswinner:")) {
+                                    String winner = specUzenet.split(":")[1];
+                                    xWins = Integer.parseInt(specUzenet.split(":")[2]);
+                                    oWins = Integer.parseInt(specUzenet.split(":")[3]);
                                     vanGyoztes();
-                                    if (jelenlegiJatekos.equals(jatekos)) {
+                                    if (winner.equals(jatekos)) {
                                         board.setCurrentPlayer("Te győztél");
                                     } else {
-                                        board.setCurrentPlayer(jelenlegiJatekos + " győzött");
+                                        board.setCurrentPlayer(winner + " győzött");
                                     }
+                                }
+                                if (specUzenet.equals("wantmore")) {
+                                    kimenet.println("--wantmore:" + wantMore());
+                                }
+                                if (specUzenet.equals("boardfull")) {
+                                    JOptionPane.showMessageDialog(kliensAblak, "A játékmező megtelt! Üres táblával folytatjuk!");
+                                    board.reset();
                                 }
                                 if (specUzenet.equals("stop")) {
                                     board.timer.stop();
                                     board.disable();
+                                    xWins = 0;
+                                    oWins = 0;
                                 }
                             } else {
                                 log.append(uzenet + "\n");
@@ -260,9 +270,15 @@ public class KliensGUI {
                         }
                         socket.close();
                         szetkapcsolas();
+                        board.destroy();
+                        board.timer.stop();
+                        board.timer.reset();
                     } catch (IOException e) {
                         log.append(dateFormat.format(new Date()) + "Kapcsolat megszakadt.\n");
                         szetkapcsolas();
+                        board.destroy();
+                        board.timer.stop();
+                        board.timer.reset();
                     }
                 });
             } catch (IOException e) {
@@ -271,6 +287,11 @@ public class KliensGUI {
             }
         } else {
             szetkapcsolas();
+            board.destroy();
+            board.timer.stop();
+            board.timer.reset();
+            xWins = 0;
+            oWins = 0;
 
             try {
                 socket.close();
@@ -280,6 +301,10 @@ public class KliensGUI {
         }
     }
 
+    private boolean wantMore() {
+        return JOptionPane.showConfirmDialog(kliensAblak, "Szeretnél mégegyet játszani?", "További játék", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+    }
+
     private void vanGyoztes() {
         board.timer.stop();
         board.disable();
@@ -287,6 +312,8 @@ public class KliensGUI {
         for (int i = 0; i < 5; i++) {
             board.showWinner(xGyoztesKoord[i], yGyoztesKoord[i]);
         }
+
+        board.setWins(xWins, oWins);
     }
 
     private boolean readyCheck() {
@@ -297,6 +324,8 @@ public class KliensGUI {
         if (!uzenetText.getText().equals("")) {
             if (uzenetText.getText().equals("--readynow")) {
                 kimenet.println("--ready:true");
+            } else if (uzenetText.getText().equals("--wantmore")) {
+                kimenet.println("--wantmore:true");
             } else {
                 kimenet.println(uzenetText.getText());
             }

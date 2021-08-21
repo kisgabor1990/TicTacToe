@@ -30,17 +30,16 @@ public class SzerverGUI {
 
     public JFrame szerverAblak;
     private JLabel tablaMeretLabel, portLabel;
-    private JFormattedTextField tablaMeretText, portText;
+    private JTextField tablaMeretText, portText;
     private JCheckBox csatlakozasInditasUtan;
     private JButton inditasGomb;
     private JTextArea log;
     private JScrollPane logPane;
 
-    private MaskFormatter tablaMeretFormatter, portFormatter;
     private String IPcim;
     private String[][] board;
     private boolean inditva = false;
-    private int port, meret;
+    private int port, meret, steps;
     private int[] xGyoztesKoord = new int[5];
     private int[] yGyoztesKoord = new int[5];
 
@@ -52,12 +51,6 @@ public class SzerverGUI {
 
     public void szerverMain() {
         IPcim = getIP();
-        try {
-            tablaMeretFormatter = new MaskFormatter("##");
-            portFormatter = new MaskFormatter("####");
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
 
         szerverAblak();
         komponensek();
@@ -84,8 +77,7 @@ public class SzerverGUI {
         tablaMeretLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         szerverAblak.add(tablaMeretLabel);
 
-        tablaMeretText = new JFormattedTextField(tablaMeretFormatter);
-        tablaMeretText.setText("35");
+        tablaMeretText = new JTextField("35");
         tablaMeretText.setSize(80, 40);
         tablaMeretText.setLocation(330, 20);
         tablaMeretText.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
@@ -97,8 +89,7 @@ public class SzerverGUI {
         portLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         szerverAblak.add(portLabel);
 
-        portText = new JFormattedTextField(portFormatter);
-        portText.setText("9000");
+        portText = new JTextField("9000");
         portText.setSize(80, 40);
         portText.setLocation(330, 80);
         portText.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
@@ -130,15 +121,24 @@ public class SzerverGUI {
     }
 
     private void szerverInditas() {
-        port = Integer.parseInt(portText.getText());
+        try {
+            port = Integer.parseInt(portText.getText());
+            meret = Integer.parseInt(tablaMeretText.getText());
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(szerverAblak, "Hibás adat!", "Hiba!", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (meret < 5) {
+            JOptionPane.showMessageDialog(szerverAblak, "A méret nem lehet kisebb, mint 5!", "Hiba!", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
 
         if (!inditva) {
             tablaMeretText.setEnabled(false);
             portText.setEnabled(false);
             csatlakozasInditasUtan.setEnabled(false);
             inditasGomb.setEnabled(false);
-
-            meret = Integer.parseInt(tablaMeretText.getText());
 
             log.append(dateFormat.format(new Date()) + "Szerver indítása...\n");
             try {
@@ -164,6 +164,7 @@ public class SzerverGUI {
                     kliens.jatekMain();
                     kliens.setAddress("localhost");
                     kliens.setPort(String.valueOf(port));
+                    csatlakozasInditasUtan.setSelected(false);
                 }
             });
 
@@ -239,15 +240,56 @@ public class SzerverGUI {
                                                 int yCoord = Integer.parseInt(next[2]);
                                                 board[xCoord][yCoord] = jelenlegiJatekos.getXO();
                                                 specKozvetit("--next:" + next[1] + ":" + next[2]);
+                                                steps++;
                                                 if (vanGyoztes(xCoord, yCoord)) {
+                                                    if (jelenlegiJatekos.getXO().equals("X")) {
+                                                        jatekosX.win();
+                                                    } else {
+                                                        jatekosO.win();
+                                                    }
                                                     kozvetit("A játék véget ért! " + jelenlegiJatekos.getXO() + " győzőtt!");
                                                     log.append(dateFormat.format(new Date()) + "A játék véget ért! " + jelenlegiJatekos.getXO() + " győzőtt!\n");
                                                     specKozvetit("--xwinnercoord:" + Arrays.stream(xGyoztesKoord).mapToObj(String::valueOf).collect(Collectors.joining(":")));
                                                     specKozvetit("--ywinnercoord:" + Arrays.stream(yGyoztesKoord).mapToObj(String::valueOf).collect(Collectors.joining(":")));
-                                                    specKozvetit("--haswinner");
+                                                    specKozvetit("--haswinner:" + jelenlegiJatekos.getXO() + ":" + jatekosX.getWins() + ":" + jatekosO.getWins());
+                                                    specKozvetit("--wantmore");
+                                                    jatekosX.setWantMore(false);
+                                                    jatekosO.setWantMore(false);
+                                                    kovetkezoJatekos();
                                                 } else {
+                                                    if (steps == meret * meret) {
+                                                        specKozvetit("--boardfull");
+                                                        for (int i = 0; i < meret; i++) {
+                                                            for (int j = 0; j < meret; j++) {
+                                                                board[i][j] = "";
+                                                            }
+
+                                                        }
+                                                        steps = 0;
+                                                    }
                                                     kovetkezoJatekos();
                                                     specKozvetit("--currentplayer:" + jelenlegiJatekos.getXO());
+                                                }
+                                            }
+                                            if (specUzenet.startsWith("wantmore:") && !jatekos.isWantMore()) {
+                                                boolean wantMore = Boolean.parseBoolean(specUzenet.split(":")[1]);
+                                                if (wantMore) {
+                                                    log.append(dateFormat.format(new Date()) + jatekos.getXO() + " játékos szeretne még játszani.\n");
+                                                    kozvetit(jatekos.getXO() + " játékos szeretne még játszani.");
+                                                } else {
+                                                    log.append(dateFormat.format(new Date()) + jatekos.getXO() + " játékos nem szeretne többet játszani.\n");
+                                                    kozvetit(jatekos.getXO() + " játékos nem szeretne többet játszani.");
+                                                    kimenet.println(dateFormat.format(new Date()) + "Ha szeretnél még játszani, írd be: --wantmore");
+                                                }
+                                                if (jatekos.getXO().equals("X")) {
+                                                    jatekosX.setWantMore(wantMore);
+                                                } else {
+                                                    jatekosO.setWantMore(wantMore);
+                                                }
+                                                if (jatekosX.isWantMore() && jatekosO.isWantMore()) {
+                                                    specKozvetit("--readycheck");
+                                                    jatekosX.setReady(false);
+                                                    jatekosO.setReady(false);
                                                 }
                                             }
                                         } else {
@@ -261,9 +303,11 @@ public class SzerverGUI {
                                     if (jatekos.getXO().equals("X")) {
                                         jatekosX = null;
                                         jatekosO.setReady(false);
+                                        jatekosO.setWins(0);
                                     } else {
                                         jatekosO = null;
                                         jatekosX.setReady(false);
+                                        jatekosX.setWins(0);
                                     }
                                 } else {
                                     kimenet.println("-:0");
@@ -313,6 +357,7 @@ public class SzerverGUI {
 
             jatekosX = null;
             jatekosO = null;
+            steps = 0;
 
             log.append(dateFormat.format(new Date()) + "Port lezárása...\n");
             es.submit(() -> {
